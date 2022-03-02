@@ -94,7 +94,7 @@ app.put("/students/edit/:id", async(req, res)=>{ // 畫面
     let d = await StudentModal.findOneAndUpdate(
       { id },
       { id, name, age, scholarship:{merit, other}},
-      { new: true, runValidators: true,} // PUT如果只有部分更新  沒帶參數時跑驗證會錯
+      { new: true, runValidators: true, overwrite: true} // PUT如果只有部分更新  沒帶參數時跑驗證會錯
       )
     res.send({message:"Successfully updated"})
   }catch(e){
@@ -102,10 +102,42 @@ app.put("/students/edit/:id", async(req, res)=>{ // 畫面
     res.send(e)
   }
 })
+
+
+class newData {
+  constructor(){}
+  setProperty(key, value){
+    if(key !== "merit" && key!=="other"){
+      this[key] = value;
+    }else{
+      this[`scholarship.${key}`] = value;
+    }
+  }
+} 
+app.patch("/students/edit/:id", async(req, res)=>{ // 畫面
+  let {id} =req.params;
+  let newObject = new newData();
+  for(let property in req.body){
+    newObject.setProperty(property, req.body[property])
+  }
+  console.log(newObject) // 獲得數值帶回去
+  try {
+    let d = await StudentModal.findOneAndUpdate(
+      { id },
+      newObject,
+      { new: true, runValidators: true,} // PUT如果只有部分更新  沒帶參數時跑驗證會錯
+    )
+    console.log(d)
+    res.send({message:"Successfully updated"})
+  }catch(e){
+    res.status(404)
+    res.send(e)
+  }
+})
 //delete
-app.delete("/students/delete/:id",()=>{
+app.delete("/students/delete/:id",(req, res)=>{
   let{id} = req.params;
-  StudentModal.deleteOne(id).then(()=>{
+  StudentModal.deleteOne({id}).then(()=>{
     res.send("Deleted Student")
   }).catch((e)=>{
     console.log(e)
@@ -113,6 +145,14 @@ app.delete("/students/delete/:id",()=>{
   })
 })
 
+app.delete("/students/delete",(req, res)=>{
+  StudentModal.deleteMany({}).then(()=>{
+    res.send("Deleted all Students")
+  }).catch((e)=>{
+    console.log(e)
+    res.send("Deleted failed")
+  })
+})
 
 app.get("/*",async (req, res)=>{ // 畫面
   res.status(404);
