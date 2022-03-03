@@ -7,12 +7,20 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import StudentModal from './models/student.js';
 import methodOverride from 'method-override';
+import cookieParser from 'cookie-parser';
+var session = require('express-session')
 
 //middleware 不論是get或post 都會執行
 app.use(express.static("public")); //css
 app.use(bodyParser.urlencoded({extended:true})); //要添加bodyParser才會轉換POST過來的資料
 app.use(methodOverride("_method"));
+app.use(cookieParser("thisismysecret"));
 app.set("view engin","ejs") //這代表 view engine 我們宣告為 ejs
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: false
+}))
 
 // connect to mongodb
 await mongoose.connect('mongodb://localhost:27017/studentDB')
@@ -24,7 +32,27 @@ await mongoose.connect('mongodb://localhost:27017/studentDB')
 })
 
 app.get("/", (req, res)=>{
-  res.render("index.ejs") //render 去處理
+  let {address} = req.signedCookies
+  res.render("your address is" + address) //render 去處理
+  console.log(req,session)
+})
+
+app.get("/verifyUser", (req, res)=>{
+  req.session.isVerify = true 
+  res.send("your are verified") //render 去處理
+})
+app.get("/secret", (req, res)=>{
+  if(req.session.isVerify){
+    res.send("your are verified") //render 去處理
+  }else{
+    res.status(403).send("You are not authorized to see my secret") //render 去處理
+  }
+})
+
+
+app.get("/getSignedCookies", (req, res)=>{
+  res.cookie("address", "Hawaii St.", {signed: true}) //簽名 寫入
+  res.send("Cookie has been send")
 })
 
 // get
