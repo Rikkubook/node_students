@@ -1,6 +1,8 @@
 import express from 'express';
 const app = express();
 
+require('dotenv').config()
+
 import ejs from'ejs';
 import fetch from 'node-fetch';
 import mongoose from 'mongoose';
@@ -8,19 +10,21 @@ import bodyParser from 'body-parser';
 import StudentModal from './models/student.js';
 import methodOverride from 'method-override';
 import cookieParser from 'cookie-parser';
-var session = require('express-session')
+import session from 'express-session';
+import flash from 'connect-flash';
 
 //middleware 不論是get或post 都會執行
 app.use(express.static("public")); //css
 app.use(bodyParser.urlencoded({extended:true})); //要添加bodyParser才會轉換POST過來的資料
 app.use(methodOverride("_method"));
-app.use(cookieParser("thisismysecret"));
+app.use(cookieParser(process.env.SECRE));
 app.set("view engin","ejs") //這代表 view engine 我們宣告為 ejs
 app.use(session({
-  secret: 'keyboard cat',
+  secret: process.env.SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: true
 }))
+app.use(flash)
 
 // connect to mongodb
 await mongoose.connect('mongodb://localhost:27017/studentDB')
@@ -32,9 +36,8 @@ await mongoose.connect('mongodb://localhost:27017/studentDB')
 })
 
 app.get("/", (req, res)=>{
-  let {address} = req.signedCookies
-  res.render("your address is" + address) //render 去處理
-  console.log(req,session)
+  req.flash("success_msg","Successfully get to the homepage")
+  res.send("Hi" + req.flash("success_msg")) // Hi Successfully get to the homepage
 })
 
 app.get("/verifyUser", (req, res)=>{
