@@ -1,70 +1,80 @@
+
 import express from 'express';
 const app = express();
 import mongoose from 'mongoose';
+import bodyParser from 'body-parser';
+import bcrypt from 'bcrypt';
+import UserModal from './models/user.js';
+
+
+const saltRounds = 10; //幫密碼加密的長度與時間
+
+
+app.use(bodyParser.urlencoded({extended:true})); //要添加bodyParser才會轉換POST過來的資料
 
 app.set("view engine", "ejs");
-// middlewares
-app.use(express.static("public"));
-
-const monkeySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    minlength: 5
-  }
+// 註冊
+app.get("/signup", async(req, res, next)=>{
+  console.log('get')
+  res.render('signup')
 })
-const Monkey = mongoose.model("Monkey",monkeySchema)
-
-app.get("/", async(req, res, next)=>{
-  try{ //在 promise 下 的錯誤要用 try catch + next 處理
-    let newMonkey = new Monkey({name: "CJ"})
-    newMonkey.save()
-    .then(()=>{
-      res.send("data has been saved")
-    }).catch((errMsg)=>{ // 一定要寫 validator error has to be caught by catch
-      res.send(errMsg)
-    })
-  }catch(e){
-    next(e)
-  }
-})
-
-app.get("/monkeyUpdate", async (req, res, next)=>{
-  try{ //在 promise 下 的錯誤要用 try catch + next 處理
-    await Monkey.findOneAndUpdate(
-      {name: "Benson"},
-      {name:"CJ"},
-      {new: true, runValidator: true},
-      (err,doc)=>{
-        if(err){
-          res.send(err);
-        } else {
-          res.send(doc);
-        }
+app.post("/signup", (req, res, next)=>{
+  console.log(req.body)
+  let {username, password} = req.body
+  bcrypt.genSalt(saltRounds,(err, salt) => {
+    if(err){
+      next(err)
+    }
+    console.log(salt)
+    bcrypt.hash(password, salt, (err, hash) => {
+      if(err){
+        next(err)
       }
-    )
-  }catch(e){
-    next(e)
+      console.log(hash)
+      let newUser = new UserModal({username, hash})
+      try{
+        newUser.save().then(()=>{
+          res.send({message: "newUser save into DB"})
+        }).catch((e)=>{
+          res.send(e)
+        })
+      }catch (err){
+        next(err)
+      }
+    });
+  });
+})
+
+// 登入
+app.get("/login", async(req, res, next)=>{
+  console.log('login')
+  res.render('login')
+})
+app.post("/login", async(req, res, next)=>{
+  console.log('post')
+  console.log(username, password)
+  let {username, password} = req.body
+  try{
+    let foundUser = await UserModal.findOne({username})
+    if(foundUser){
+      bcrypt.compareSync(password, foundUser.password, (err, result)=>{
+        if(err){
+          next(err)
+        }
+  
+        if(result === true){
+          res.render("secret")
+        }else{
+          res.send("not correct")
+        }
+      })
+    } else{
+      res.send("not correct")
+    }
+
+  } catch (err){
+    next(err)
   }
-})
-
-app.get("/monkey", async (req, res, next)=>{
-  try{ //在 promise 下 的錯誤要用 try catch + next 處理
-    let findMonkey = await Monkey.findOne({name: "Benson k."})
-    res.send(findMonkey)
-  }catch(e){
-    next(e)
-  }
-})
-
-app.get("/*",async (req, res)=>{ // 畫面
-  res.status(404);
-  res.send("Not allowed")
-})
-
-// 放在最下方的 middleware 如果上方 app.get() 有任何錯誤會跑到這
-app.use((err, req, res, next)=>{
-  console.error(err)
-  res.status(500).send("something is broken")
 })
 
 mongoose

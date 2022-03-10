@@ -1,7 +1,7 @@
 import express from 'express';
 const app = express();
 
-require('dotenv').config()
+// require('dotenv').config()
 
 import ejs from'ejs';
 import fetch from 'node-fetch';
@@ -10,7 +10,7 @@ import bodyParser from 'body-parser';
 import StudentModal from './models/student.js';
 import methodOverride from 'method-override';
 import cookieParser from 'cookie-parser';
-import session from 'express-session';
+// import session from 'express-session';
 import flash from 'connect-flash';
 
 //middleware 不論是get或post 都會執行
@@ -19,11 +19,11 @@ app.use(bodyParser.urlencoded({extended:true})); //要添加bodyParser才會轉�
 app.use(methodOverride("_method"));
 app.use(cookieParser(process.env.SECRE));
 app.set("view engin","ejs") //這代表 view engine 我們宣告為 ejs
-app.use(session({
-  secret: process.env.SECRET,
-  resave: false,
-  saveUninitialized: true
-}))
+// app.use(session({
+//   secret: process.env.SECRET,
+//   resave: false,
+//   saveUninitialized: true
+// }))
 app.use(flash)
 
 // connect to mongodb
@@ -36,8 +36,8 @@ await mongoose.connect('mongodb://localhost:27017/studentDB')
 })
 
 app.get("/", (req, res)=>{
-  req.flash("success_msg","Successfully get to the homepage")
-  res.send("Hi" + req.flash("success_msg")) // Hi Successfully get to the homepage
+  // req.flash("success_msg","Successfully get to the homepage")
+  res.send("Hi") // Hi Successfully get to the homepage
 })
 
 app.get("/verifyUser", (req, res)=>{
@@ -52,6 +52,9 @@ app.get("/secret", (req, res)=>{
   }
 })
 
+app.get("/signup", (req,res)=>{
+  res.render('signup.ejs')
+})
 
 app.get("/getSignedCookies", (req, res)=>{
   res.cookie("address", "Hawaii St.", {signed: true}) //簽名 寫入
@@ -191,6 +194,6 @@ app.get("/*",async (req, res)=>{ // 畫面
 })
 
 
-app.listen(3000, ()=>{
-  console.log("Server is running on port 3000")
+app.listen(3001, ()=>{
+  console.log("Server is running on port 3001")
 })
